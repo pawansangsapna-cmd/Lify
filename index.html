@@ -6,32 +6,85 @@
 <title>Instagram DM + Video Call</title>
 <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 <style>
-  body { margin:0; font-family: Arial, sans-serif; background:#fafafa; }
-  .header { background:#fff; padding:15px; border-bottom:1px solid #dbdbdb; display:flex; justify-content:space-between; align-items:center; }
-  .header h2 { margin:0; font-size:18px; }
-  .messages { height:40vh; overflow-y:scroll; padding:10px; display:flex; flex-direction:column; gap:10px; }
-  .message { max-width:70%; padding:10px; border-radius:15px; word-break: break-word; }
-  .sent { align-self:flex-end; background:#dcf8c6; }
-  .received { align-self:flex-start; background:#fff; border:1px solid #dbdbdb; }
-  .input-box { display:flex; border-top:1px solid #dbdbdb; background:#fff; padding:5px; gap:5px; }
-  .input-box input[type="text"] { flex:1; padding:10px; border:none; outline:none; font-size:16px; border-radius:10px; }
-  .input-box input[type="file"] { border:none; }
-  .input-box button { padding:10px 15px; border:none; background:#0095f6; color:#fff; cursor:pointer; font-weight:bold; border-radius:10px; }
-  .video-container { display:flex; justify-content:space-around; margin:10px 0; flex-wrap:wrap; gap:10px; }
-  video { width:45%; max-height:300px; border:1px solid #dbdbdb; border-radius:10px; background:#000; }
-  .room-info { padding:10px; background:#fff; border-bottom:1px solid #dbdbdb; }
+  body {
+    margin:0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%);
+    min-height: 100vh;
+    display:flex;
+    flex-direction:column;
+  }
+
+  /* --- PASSWORD SCREEN --- */
+  #passwordScreen {
+    position:fixed; top:0; left:0; width:100%; height:100%;
+    background:#000000e0; display:flex; flex-direction:column;
+    justify-content:center; align-items:center; z-index:9999; color:white;
+  }
+  #passwordScreen input {
+    padding:15px; font-size:22px; width:150px; text-align:center;
+    border-radius:10px; border:none; outline:none; margin-bottom:15px;
+  }
+  #passwordScreen button {
+    padding:10px 20px; font-size:18px; border:none; border-radius:10px;
+    background:#0095f6; color:white; cursor:pointer;
+  }
+  #passError { color:red; margin-top:15px; font-size:18px; }
+
+  .room-info {
+    padding:10px;
+    background: rgba(255,255,255,0.9);
+    border-bottom:1px solid #dbdbdb;
+  }
   .link-box { display:flex; gap:10px; margin-top:5px; }
   .link-box input { flex:1; padding:5px; font-size:14px; border-radius:5px; }
   .link-box button { padding:5px 10px; font-size:14px; background:#0095f6; color:#fff; border:none; cursor:pointer; border-radius:5px; }
-  .controls { display:flex; gap:10px; margin:10px; justify-content:center; }
+
+  .messages {
+    flex:1;
+    overflow-y:auto;
+    padding:10px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+
+  .message { max-width:70%; padding:10px; border-radius:15px; word-break: break-word; }
+  .sent { align-self:flex-end; background:#dcf8c6; }
+  .received { align-self:flex-start; background:#fff; border:1px solid #dbdbdb; }
+
+  .input-box {
+    display:flex;
+    border-top:1px solid #dbdbdb;
+    background: rgba(255,255,255,0.95);
+    padding:5px;
+    gap:5px;
+  }
+  .input-box input[type="text"] { flex:1; padding:10px; border:none; outline:none; font-size:16px; border-radius:10px; }
+  .input-box input[type="file"] { border:none; }
+  .input-box button { padding:10px 15px; border:none; background:#0095f6; color:#fff; cursor:pointer; font-weight:bold; border-radius:10px; }
+
+  .video-container { display:flex; justify-content:space-around; margin:10px 0; flex-wrap:wrap; gap:10px; }
+  video { width:48%; max-height:300px; border:1px solid #dbdbdb; border-radius:10px; background:#000; }
+
+  .controls { display:flex; gap:10px; margin:10px; justify-content:center; flex-wrap:wrap; }
   .controls button { padding:8px 12px; border:none; border-radius:10px; background:#0095f6; color:#fff; cursor:pointer; font-weight:bold; display:flex; align-items:center; gap:5px; }
+
   img, video.received-file { max-width:200px; border-radius:10px; margin-top:5px; }
+
+  @media(max-width:768px){
+    .video-container video { width:100%; max-height:200px; }
+  }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <h2>Rohit Jadhav</h2>
+<!-- PASSWORD SCREEN -->
+<div id="passwordScreen">
+  <h2 style="margin-bottom:20px; font-size:26px;">Enter 4‑Digit Password</h2>
+  <input id="passInput" maxlength="4" placeholder="****" />
+  <button onclick="checkPass()">Unlock</button>
+  <p id="passError"></p>
 </div>
 
 <div class="room-info">
@@ -63,12 +116,23 @@
 </div>
 
 <script>
+// ------------------ PASSWORD CHECK ------------------
+function checkPass() {
+  const input = document.getElementById("passInput").value;
+  if(input === "1008"){
+    document.getElementById("passwordScreen").style.display="none";
+    initCall(); // Start the main app
+  } else {
+    document.getElementById("passError").innerText="❌ Wrong Password!";
+  }
+}
+
+// ------------------ MESSAGES ------------------
 let messagesDiv = document.getElementById('messages');
 let peer, localStream, currentCall, conn;
-let videoFacingMode = "user"; // front camera
+let videoFacingMode = "user"; 
 let muted=false, speakerOn=true;
 
-// ------------------ Messages ------------------
 function appendMessage(cls, text='', fileData='', fileType=''){
   const msgDiv = document.createElement('div');
   msgDiv.classList.add('message', cls);
@@ -121,7 +185,7 @@ function copyLink(){
   alert('Room link copied!');
 }
 
-// ------------------ Video Call ------------------
+// ------------------ VIDEO ------------------
 async function startStream(){
   localStream = await navigator.mediaDevices.getUserMedia({
     video: { width:1280, height:720, frameRate:30, facingMode: videoFacingMode },
@@ -142,7 +206,7 @@ async function switchCamera(){
   }
 }
 
-// ------------------ PeerJS ------------------
+// ------------------ PEERJS ------------------
 async function initCall(){
   await startStream();
   const userId = 'peer-'+Math.random().toString(36).substring(2,8);
@@ -195,7 +259,7 @@ function setupDataConnection(){
   });
 }
 
-// ------------------ Call Controls ------------------
+// ------------------ CONTROLS ------------------
 document.getElementById('muteBtn').onclick = ()=>{
   if(!localStream) return;
   muted = !muted;
@@ -215,98 +279,6 @@ document.getElementById('endCallBtn').onclick = ()=>{
 };
 document.getElementById('switchBtn').onclick = switchCamera;
 
-initCall();
-</script>
-</body>
-</html    reader.readAsDataURL(file);
-    fileInput.value='';
-  }
-}
-
-function copyLink(){
-  const input = document.getElementById('roomLink');
-  input.select();
-  input.setSelectionRange(0,99999);
-  document.execCommand('copy');
-  alert('Room link copied!');
-}
-
-async function initCall(){
-  const userId = 'peer-'+Math.random().toString(36).substring(2,8);
-  const link = window.location.origin + window.location.pathname + '?peer=' + userId;
-  document.getElementById('roomLink').value = link;
-
-  localStream = await navigator.mediaDevices.getUserMedia({video:true, audio:true});
-  document.getElementById('localVideo').srcObject = localStream;
-
-  peer = new Peer(userId,{
-    host:'0.peerjs.com',
-    port:443,
-    secure:true
-  });
-
-  peer.on('open', id=>{
-    console.log('My Peer ID:',id);
-    const urlParams = new URLSearchParams(window.location.search);
-    const otherId = urlParams.get('peer');
-    if(otherId && otherId!==id){
-      currentCall = peer.call(otherId, localStream);
-      currentCall.on('stream', remoteStream=>{
-        document.getElementById('remoteVideo').srcObject = remoteStream;
-      });
-      conn = peer.connect(otherId);
-      setupDataConnection();
-    }
-  });
-
-  peer.on('call', call=>{
-    currentCall = call;
-    call.answer(localStream);
-    call.on('stream', remoteStream=>{
-      document.getElementById('remoteVideo').srcObject = remoteStream;
-    });
-  });
-
-  peer.on('connection', c=>{
-    conn = c;
-    setupDataConnection();
-  });
-
-  peer.on('error', err=>{console.error(err); alert('PeerJS Error:'+err);});
-}
-
-function setupDataConnection(){
-  if(!conn) return;
-  conn.on('data', data=>{
-    if(data.type==='text'){
-      appendMessage('received', data.content);
-    } else if(data.type==='file'){
-      appendMessage('received','',data.content,data.fileType);
-    }
-  });
-}
-
-// --- Call control buttons ---
-let muted=false, speakerOn=true;
-document.getElementById('muteBtn').onclick = ()=>{
-  if(!localStream) return;
-  muted = !muted;
-  localStream.getAudioTracks()[0].enabled = !muted;
-  document.getElementById('muteBtn').innerText = muted?'Unmute':'Mute';
-};
-document.getElementById('speakerBtn').onclick = ()=>{
-  const remoteVideo = document.getElementById('remoteVideo');
-  speakerOn = !speakerOn;
-  remoteVideo.muted = !speakerOn;
-  document.getElementById('speakerBtn').innerText = speakerOn?'Speaker Off':'Speaker On';
-};
-document.getElementById('endCallBtn').onclick = ()=>{
-  if(currentCall) currentCall.close();
-  if(peer) peer.destroy();
-  alert('Call ended');
-};
-
-initCall();
 </script>
 </body>
 </html>
