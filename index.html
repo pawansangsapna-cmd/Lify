@@ -31,49 +31,99 @@
   }
   #passError { color:red; margin-top:15px; font-size:18px; }
 
-  .room-info {
-    padding:10px;
-    background: rgba(255,255,255,0.9);
-    border-bottom:1px solid #dbdbdb;
-  }
-  .link-box { display:flex; gap:10px; margin-top:5px; }
-  .link-box input { flex:1; padding:5px; font-size:14px; border-radius:5px; }
-  .link-box button { padding:5px 10px; font-size:14px; background:#0095f6; color:#fff; border:none; cursor:pointer; border-radius:5px; }
-
-  .messages {
+  .main-container {
+    display:flex;
     flex:1;
-    overflow-y:auto;
-    padding:10px;
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-  }
-
-  .message { max-width:70%; padding:10px; border-radius:15px; word-break: break-word; }
-  .sent { align-self:flex-end; background:#dcf8c6; }
-  .received { align-self:flex-start; background:#fff; border:1px solid #dbdbdb; }
-
-  .input-box {
-    display:flex;
-    border-top:1px solid #dbdbdb;
-    background: rgba(255,255,255,0.95);
+    flex-direction: column;
     padding:5px;
     gap:5px;
   }
-  .input-box input[type="text"] { flex:1; padding:10px; border:none; outline:none; font-size:16px; border-radius:10px; }
+
+  .video-section {
+    display:flex;
+    flex:1;
+    gap:5px;
+    flex-wrap:wrap;
+    justify-content:center;
+    align-items:center;
+  }
+
+  #remoteVideo {
+    background:#000;
+    flex:1;
+    border-radius:10px;
+    min-height:250px;
+  }
+
+  #localVideo {
+    background:#000;
+    width:150px;
+    height:150px;
+    border-radius:10px;
+    position:relative;
+    cursor:pointer;
+    transition: all 0.3s ease;
+  }
+
+  #localVideo.minimized { width:100px; height:100px; opacity:0.8; }
+
+  .controls {
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    flex-wrap:wrap;
+    margin:5px;
+  }
+  .controls button {
+    padding:10px 15px;
+    border:none;
+    border-radius:10px;
+    background:#0095f6;
+    color:white;
+    font-weight:bold;
+    cursor:pointer;
+    flex:1 0 100px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:5px;
+  }
+
+  .chat-section {
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+  }
+
+  .messages {
+    max-height:200px;
+    overflow-y:auto;
+    padding:5px;
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+    background:rgba(255,255,255,0.9);
+    border-radius:10px;
+  }
+  .message { max-width:70%; padding:10px; border-radius:15px; word-break:break-word; }
+  .sent { align-self:flex-end; background:#dcf8c6; }
+  .received { align-self:flex-start; background:#fff; border:1px solid #dbdbdb; }
+  .message img, .message video.received-file { max-width:200px; border-radius:10px; margin-top:5px; }
+
+  .input-box {
+    display:flex;
+    gap:5px;
+    margin-top:5px;
+  }
+  .input-box input[type="text"] { flex:1; padding:10px; border-radius:10px; border:none; outline:none; }
   .input-box input[type="file"] { border:none; }
-  .input-box button { padding:10px 15px; border:none; background:#0095f6; color:#fff; cursor:pointer; font-weight:bold; border-radius:10px; }
-
-  .video-container { display:flex; justify-content:space-around; margin:10px 0; flex-wrap:wrap; gap:10px; }
-  video { width:48%; max-height:300px; border:1px solid #dbdbdb; border-radius:10px; background:#000; }
-
-  .controls { display:flex; gap:10px; margin:10px; justify-content:center; flex-wrap:wrap; }
-  .controls button { padding:8px 12px; border:none; border-radius:10px; background:#0095f6; color:#fff; cursor:pointer; font-weight:bold; display:flex; align-items:center; gap:5px; }
-
-  img, video.received-file { max-width:200px; border-radius:10px; margin-top:5px; }
+  .input-box button { padding:10px 15px; border:none; border-radius:10px; background:#0095f6; color:white; cursor:pointer; }
 
   @media(max-width:768px){
-    .video-container video { width:100%; max-height:200px; }
+    .video-section { flex-direction:column; }
+    #remoteVideo { min-height:200px; }
+    #localVideo { width:120px; height:120px; }
+    #localVideo.minimized { width:80px; height:80px; }
   }
 </style>
 </head>
@@ -87,88 +137,80 @@
   <p id="passError"></p>
 </div>
 
-<div class="room-info">
-  <div>Your Room Link (Share with friend):</div>
-  <div class="link-box">
-    <input type="text" id="roomLink" readonly>
-    <button onclick="copyLink()">Copy</button>
+<div class="main-container">
+  <!-- VIDEO SECTION -->
+  <div class="video-section">
+    <video id="remoteVideo" autoplay playsinline></video>
+    <video id="localVideo" autoplay muted playsinline onclick="toggleLocalMinimize()"></video>
+  </div>
+
+  <!-- BUTTON CONTROLS -->
+  <div class="controls">
+    <button id="switchBtn">🔄 Switch</button>
+    <button id="muteBtn">🎤 Mute</button>
+    <button id="speakerBtn">🔊 Speaker</button>
+    <button id="endCallBtn">❌ End</button>
+  </div>
+
+  <!-- CHAT SECTION -->
+  <div class="chat-section">
+    <div class="messages" id="messages"></div>
+    <div class="input-box">
+      <input type="text" id="messageInput" placeholder="Message...">
+      <input type="file" id="fileInput" accept="image/*,video/*">
+      <button onclick="sendMessage()">Send</button>
+    </div>
   </div>
 </div>
 
-<div class="messages" id="messages"></div>
-
-<div class="input-box">
-  <input type="text" id="messageInput" placeholder="Message...">
-  <input type="file" id="fileInput" accept="image/*,video/*">
-  <button onclick="sendMessage()">Send</button>
-</div>
-
-<div class="video-container">
-  <video id="localVideo" autoplay muted playsinline></video>
-  <video id="remoteVideo" autoplay playsinline></video>
-</div>
-
-<div class="controls">
-  <button id="switchBtn">🔄 Switch</button>
-  <button id="muteBtn">🎤 Mute</button>
-  <button id="speakerBtn">🔊 Speaker</button>
-  <button id="endCallBtn">❌ End</button>
-</div>
-
 <script>
-// ------------------ PASSWORD CHECK ------------------
-function checkPass() {
+// ------------------ PASSWORD ------------------
+function checkPass(){
   const input = document.getElementById("passInput").value;
-  if(input === "1008"){
+  if(input==="1008"){
     document.getElementById("passwordScreen").style.display="none";
-    initCall(); // Start the main app
+    initCall();
   } else {
     document.getElementById("passError").innerText="❌ Wrong Password!";
   }
 }
 
-// ------------------ MESSAGES ------------------
+// ------------------ VARIABLES ------------------
 let messagesDiv = document.getElementById('messages');
 let peer, localStream, currentCall, conn;
-let videoFacingMode = "user"; 
+let videoFacingMode = "user";
 let muted=false, speakerOn=true;
 
+// ------------------ MESSAGES ------------------
 function appendMessage(cls, text='', fileData='', fileType=''){
   const msgDiv = document.createElement('div');
   msgDiv.classList.add('message', cls);
   if(fileData){
     if(fileType.startsWith('image')){
-      const img = document.createElement('img');
-      img.src = fileData;
-      msgDiv.appendChild(img);
+      const img = document.createElement('img'); img.src=fileData; msgDiv.appendChild(img);
     } else if(fileType.startsWith('video')){
-      const vid = document.createElement('video');
-      vid.src = fileData;
-      vid.controls = true;
-      vid.classList.add('received-file');
-      msgDiv.appendChild(vid);
+      const vid = document.createElement('video'); vid.src=fileData; vid.controls=true; vid.classList.add('received-file'); msgDiv.appendChild(vid);
     }
   }
   if(text) msgDiv.appendChild(document.createTextNode(text));
   messagesDiv.appendChild(msgDiv);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  messagesDiv.scrollTop=messagesDiv.scrollHeight;
 }
 
 function sendMessage(){
-  const input = document.getElementById('messageInput');
-  const text = input.value.trim();
-  const fileInput = document.getElementById('fileInput');
+  const input=document.getElementById('messageInput');
+  const text=input.value.trim();
+  const fileInput=document.getElementById('fileInput');
 
   if(text){
     appendMessage('sent', text);
     if(conn && conn.open) conn.send({type:'text', content:text});
     input.value='';
   }
-
   if(fileInput.files.length>0){
-    const file = fileInput.files[0];
-    const reader = new FileReader();
-    reader.onload = ()=>{
+    const file=fileInput.files[0];
+    const reader=new FileReader();
+    reader.onload=()=>{
       appendMessage('sent','',reader.result,file.type);
       if(conn && conn.open) conn.send({type:'file', content:reader.result, fileType:file.type});
     };
@@ -177,108 +219,92 @@ function sendMessage(){
   }
 }
 
-function copyLink(){
-  const input = document.getElementById('roomLink');
-  input.select();
-  input.setSelectionRange(0,99999);
-  document.execCommand('copy');
-  alert('Room link copied!');
-}
-
 // ------------------ VIDEO ------------------
 async function startStream(){
   localStream = await navigator.mediaDevices.getUserMedia({
-    video: { width:1280, height:720, frameRate:30, facingMode: videoFacingMode },
+    video:{width:1280,height:720,frameRate:30,facingMode:videoFacingMode},
     audio:true
   });
-  document.getElementById('localVideo').srcObject = localStream;
+  document.getElementById('localVideo').srcObject=localStream;
 }
 
 async function switchCamera(){
   if(!localStream) return;
-  videoFacingMode = (videoFacingMode === 'user') ? 'environment' : 'user';
-  const tracks = localStream.getTracks();
-  tracks.forEach(track => track.stop());
+  videoFacingMode = (videoFacingMode==='user')?'environment':'user';
+  localStream.getTracks().forEach(track=>track.stop());
   await startStream();
   if(currentCall){
-    const sender = currentCall.peerConnection.getSenders().find(s => s.track.kind === 'video');
+    const sender=currentCall.peerConnection.getSenders().find(s=>s.track.kind==='video');
     sender.replaceTrack(localStream.getVideoTracks()[0]);
   }
+}
+
+function toggleLocalMinimize(){
+  const local = document.getElementById('localVideo');
+  local.classList.toggle('minimized');
 }
 
 // ------------------ PEERJS ------------------
 async function initCall(){
   await startStream();
-  const userId = 'peer-'+Math.random().toString(36).substring(2,8);
-  const link = window.location.origin + window.location.pathname + '?peer=' + userId;
-  document.getElementById('roomLink').value = link;
+  const userId='peer-'+Math.random().toString(36).substring(2,8);
+  const link=window.location.origin+window.location.pathname+'?peer='+userId;
+  document.getElementById('roomLink').value=link;
 
-  peer = new Peer(userId,{
-    host:'0.peerjs.com',
-    port:443,
-    secure:true
-  });
+  peer=new Peer(userId,{host:'0.peerjs.com',port:443,secure:true});
 
   peer.on('open', id=>{
-    const urlParams = new URLSearchParams(window.location.search);
-    const otherId = urlParams.get('peer');
+    const urlParams=new URLSearchParams(window.location.search);
+    const otherId=urlParams.get('peer');
     if(otherId && otherId!==id){
-      currentCall = peer.call(otherId, localStream);
+      currentCall=peer.call(otherId, localStream);
       currentCall.on('stream', remoteStream=>{
-        document.getElementById('remoteVideo').srcObject = remoteStream;
+        document.getElementById('remoteVideo').srcObject=remoteStream;
       });
-      conn = peer.connect(otherId);
-      setupDataConnection();
+      conn=peer.connect(otherId); setupDataConnection();
     }
   });
 
   peer.on('call', call=>{
-    currentCall = call;
+    currentCall=call;
     call.answer(localStream);
     call.on('stream', remoteStream=>{
-      document.getElementById('remoteVideo').srcObject = remoteStream;
+      document.getElementById('remoteVideo').srcObject=remoteStream;
     });
   });
 
-  peer.on('connection', c=>{
-    conn = c;
-    setupDataConnection();
-  });
-
+  peer.on('connection', c=>{ conn=c; setupDataConnection(); });
   peer.on('error', err=>{ console.error(err); alert('PeerJS Error:'+err); });
 }
 
 function setupDataConnection(){
   if(!conn) return;
   conn.on('data', data=>{
-    if(data.type==='text'){
-      appendMessage('received', data.content);
-    } else if(data.type==='file'){
-      appendMessage('received','',data.content,data.fileType);
-    }
+    if(data.type==='text') appendMessage('received', data.content);
+    else if(data.type==='file') appendMessage('received','',data.content,data.fileType);
   });
 }
 
 // ------------------ CONTROLS ------------------
-document.getElementById('muteBtn').onclick = ()=>{
+document.getElementById('muteBtn').onclick=()=>{
   if(!localStream) return;
-  muted = !muted;
-  localStream.getAudioTracks()[0].enabled = !muted;
-  document.getElementById('muteBtn').innerText = muted ? '🎤 Unmute' : '🎤 Mute';
+  muted=!muted;
+  localStream.getAudioTracks()[0].enabled=!muted;
+  document.getElementById('muteBtn').innerText=muted?'🎤 Unmute':'🎤 Mute';
 };
-document.getElementById('speakerBtn').onclick = ()=>{
-  const remoteVideo = document.getElementById('remoteVideo');
-  speakerOn = !speakerOn;
-  remoteVideo.muted = !speakerOn;
-  document.getElementById('speakerBtn').innerText = speakerOn ? '🔊 Speaker' : '🔊 Off';
+document.getElementById('speakerBtn').onclick=()=>{
+  const remoteVideo=document.getElementById('remoteVideo');
+  speakerOn=!speakerOn;
+  remoteVideo.muted=!speakerOn;
+  document.getElementById('speakerBtn').innerText=speakerOn?'🔊 Speaker':'🔊 Off';
 };
-document.getElementById('endCallBtn').onclick = ()=>{
+document.getElementById('endCallBtn').onclick=()=>{
   if(currentCall) currentCall.close();
   if(peer) peer.destroy();
   alert('Call ended');
 };
-document.getElementById('switchBtn').onclick = switchCamera;
-
+document.getElementById('switchBtn').onclick=switchCamera;
 </script>
+
 </body>
 </html>
